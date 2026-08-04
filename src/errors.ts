@@ -1,8 +1,8 @@
 /**
- * The package throws its own error type rather than either consumer's `CustomError`, so the
- * grammar can be shared without dragging a repo's error hierarchy along with it. Consumers
- * catch `FilterSyntaxError` and map `code` onto whatever they already return — bank-core to a
- * 400 `VALIDATION_ERROR`, the proxy to a refusal.
+ * The package throws its own error type rather than a consumer's, so the grammar can be
+ * shared without dragging one application's error hierarchy along with it. Catch
+ * `FilterSyntaxError` and map `code` onto whatever you already return — a 400, a refusal,
+ * whatever fits.
  */
 export type FilterErrorCode =
   | 'INVALID_FILTER_SYNTAX'

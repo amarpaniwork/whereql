@@ -3,30 +3,29 @@ import type { FilterNode, InNode, LeafNode } from './ast.js';
 /**
  * In-memory evaluation of a filter expression against a single record.
  *
- * The database evaluates the *same* expression as SQL. Where a list endpoint pushes the filter
- * down, a single-record read or a write has to be judged in-process — and the two must reach the
- * same verdict about the same row, or the proxy permits a write to a record the list would have
- * excluded.
+ * The database evaluates the *same* expression as SQL. Where a list query pushes the filter
+ * down, a single record sometimes has to be judged in-process instead — and the two must reach
+ * the same verdict about the same row, or one of them admits what the other excluded.
  *
  * That means implementing SQL's **three-valued logic**, not JavaScript's two-valued one:
  *
  *   city ne 'London'   with city IS NULL   →   UNKNOWN   (not `true`)
  *
  * `WHERE` returns only rows where the predicate is TRUE, discarding both FALSE and UNKNOWN, so
- * UNKNOWN must mean *not visible*. A naive `record.city !== 'London'` returns `true` and admits
- * exactly the row Postgres filtered out.
+ * UNKNOWN must mean *no match*. A naive `record.city !== 'London'` returns `true` and admits
+ * exactly the row the database filtered out.
  */
 
 export type Tri = true | false | 'unknown';
 
 export interface EvaluateOptions {
   /**
-   * Fields whose column is stored upper-cased, so bank-core upper-cases the literal before
-   * matching (`caseInsensitive` in its whitelist). Comparison here must do the same or the two
-   * disagree — `referenceCode eq 'cd-1'` matches in SQL and would not match here.
+   * Fields whose column is stored upper-cased, where the SQL side upper-cases the literal
+   * before matching. Comparison here must do the same or the two disagree: `code eq 'ab-1'`
+   * would match in SQL and not here.
    *
-   * Reference codes are minted upper-case (`CD-YYMM-XXXXX`), so authoring them in canonical
-   * case avoids relying on this; it is provided for correctness rather than convenience.
+   * Writing such literals in their canonical case avoids relying on this; it exists for
+   * correctness rather than convenience.
    */
   caseInsensitiveFields?: ReadonlySet<string> | readonly string[];
 }
@@ -38,12 +37,12 @@ function isCaseInsensitive(field: string, opts: EvaluateOptions | undefined): bo
 }
 
 /**
- * Same shape bank-core's validator accepts, and it must stay strict.
+ * Deliberately strict.
  *
  * `Date.parse` alone is uselessly lenient here: V8 parses `'CD-1'` to a real timestamp, and
- * `'cd-1'` to the *same* one — so sniffing with `Date.parse` would make two unrelated reference
- * codes compare equal and admit records the database excluded. Both operands have to look like
- * ISO-8601 before either is treated as an instant.
+ * `'cd-1'` to the *same* one — so sniffing with `Date.parse` would make two unrelated
+ * identifiers compare equal and admit records the database excluded. Both operands have to
+ * look like ISO-8601 before either is treated as an instant.
  */
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:\d{2})?)?$/;
 
@@ -172,9 +171,9 @@ export function evaluate(node: FilterNode, record: Record<string, unknown>, opts
 /**
  * Whether the record satisfies the expression — the question `WHERE` answers.
  *
- * **UNKNOWN counts as not visible.** This is what keeps the proxy and the database in agreement,
- * and it is also the fail-closed direction: a record missing a field the scope predicates on is
- * refused rather than admitted.
+ * **UNKNOWN counts as no match.** This is what keeps in-memory evaluation and the database in
+ * agreement, and it is also the conservative direction: a record missing a field the expression
+ * tests is excluded rather than admitted.
  */
 export function matches(node: FilterNode, record: Record<string, unknown>, opts?: EvaluateOptions): boolean {
   return evaluate(node, record, opts) === true;

@@ -1,9 +1,9 @@
 /**
  * Composing filter expressions.
  *
- * Every merge here is an **AND**, which is what makes an access-control scope structurally
- * subtractive: a caller's own filter can narrow the result set but never widen it, so no caller
- * input needs stripping for the restriction to hold.
+ * Every merge here is an **AND**, which makes composition structurally narrowing: an
+ * expression supplied by one party can restrict the result set further but never widen it, so
+ * a merged-in constraint holds without having to sanitise what it was merged with.
  */
 
 /** Single-quotes a value for the DSL, escaping embedded quotes SQL-style (`'` → `''`). */

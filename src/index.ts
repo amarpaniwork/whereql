@@ -1,11 +1,11 @@
 /**
- * itti-filter-dsl — the filter expression grammar shared by bank-core and the customer-core proxy.
+ * itti-filter-dsl — a small filter-expression language with two agreeing backends.
  *
- * Bank-core translates the AST to SQL; the proxy evaluates it in memory for writes and
- * single-record reads. One grammar, one AST, two backends — so the two cannot drift on what an
- * expression means.
+ * Parse once, then either translate the AST to SQL or evaluate it in memory against a plain
+ * object. One grammar, one AST, two backends — so the two cannot drift on what an expression
+ * means.
  *
- * Field whitelists deliberately stay in the repo that owns the table: they are per-endpoint data,
+ * Field whitelists deliberately stay with whoever owns the table: they are per-endpoint data,
  * and centralising them would mean a package release for every new filterable column.
  */
 
