@@ -98,9 +98,19 @@ CommonJS. Every consumer today is CJS, and an ESM-only build would fail there wi
 
 ## Verifying against a SQL translator
 
-`test/parser-differential.manual.ts` compares this parser's AST with another implementation's,
-expression by expression. It is not part of `npm test` because it reaches outside the package.
+The claim that both backends agree is checked, not assumed:
 
-> Still outstanding: a differential test of `matches()` against a live database running the
-> translated SQL. Reasoning about NULL semantics by reading the code is how that bug ships.
+**Parser** — `test/parser-differential.manual.ts` compares this AST with another
+implementation's, expression by expression. Currently **21 agreed, 0 diverged**.
+
+**Evaluator** — a consumer harness runs each expression twice: translated to SQL and executed
+by a real Postgres, and evaluated in memory by `matches()`, over fixtures full of NULLs.
+Currently **29/29 agreed, 0 diverged** on Postgres 16.
+
+That second one is only meaningful if it can fail, so it is checked against a deliberately
+naive evaluator too. On `city ne 'London'` with a NULL `city`, Postgres returns one row and a
+two-valued `!==` returns two — the harness catches it. Reasoning about NULL semantics by
+reading the code is how that bug ships.
+
+Neither is part of `npm test`: one reaches outside the package, the other needs a database.
 
