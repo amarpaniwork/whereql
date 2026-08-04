@@ -1,0 +1,8 @@
+# `files: ["dist"]` in package.json already limits the tarball, but keep these out
+# explicitly so a future change to that field cannot start shipping sources or the
+# cross-repo differential harness, which reaches into a sibling checkout.
+src/
+test/
+tsconfig*.json
+jest.config.js
+coverage/
