@@ -1,8 +1,16 @@
 {
-  "name": "itti-filter-dsl",
+  "name": "whereql",
   "version": "0.1.0",
-  "description": "A small filter-expression language with two agreeing backends: parse once, then translate to SQL or evaluate in memory with SQL's three-valued semantics.",
-  "keywords": ["filter", "dsl", "parser", "query", "sql", "predicate", "odata"],
+  "description": "A small filter-expression language with two agreeing backends: parse once, then translate to SQL or evaluate in memory with SQL three-valued semantics.",
+  "keywords": [
+    "filter",
+    "dsl",
+    "parser",
+    "query",
+    "sql",
+    "predicate",
+    "odata"
+  ],
   "license": "ISC",
   "//type": "CommonJS deliberately: every consumer today is CJS, and an ESM-only package would fail there with ERR_REQUIRE_ESM. Revisit as a dual build only when an ESM consumer actually exists.",
   "main": "./dist/index.js",
@@ -13,7 +21,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=18"
   },

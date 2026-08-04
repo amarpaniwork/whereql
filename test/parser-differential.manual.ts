@@ -3,7 +3,7 @@
  * or the proxy and the database can disagree about what an expression means.
  */
 import { parse as bankCoreParse } from '/Users/amarpanigrahy/Downloads/ittikar-files/ittikar-agent-portal/itti-bankcore-deal-deal-api/app/src/filter/FilterParser.js';
-import { parse as sharedParse } from '/Users/amarpanigrahy/Downloads/ittikar-files/ittikar-agent-portal/itti-filter-dsl/dist/index.js';
+import { parse as sharedParse } from '/Users/amarpanigrahy/Downloads/ittikar-files/ittikar-agent-portal/whereql/dist/index.js';
 import { contextStore } from '/Users/amarpanigrahy/Downloads/ittikar-files/ittikar-agent-portal/itti-bankcore-deal-deal-api/app/src/utils/ContextStore.js';
 
 const EXPRESSIONS = [

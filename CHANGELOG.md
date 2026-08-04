@@ -12,12 +12,13 @@ a change to `matches()` semantics is at least a minor, and a major if it can fli
 
 ## 0.1.0
 
-First release. Extracted from the bank-core services, which each carried their own copy of
-the tokenizer and parser.
+First release. Extracted from a set of services that each carried their own copy of the
+tokenizer and parser.
 
-- `parse()` — expression → AST, with the DoS guards (2048 bytes, depth 16, 128 nodes)
+- `parse(input, opts?)` — expression → AST, with configurable resource limits (2048 bytes,
+  depth 16, 128 nodes by default)
 - `matches()` / `evaluate()` — in-memory evaluation implementing SQL's three-valued logic,
-  so a proxy and a database reach the same verdict about the same record
+  so an application and its database reach the same verdict about the same record
 - `mergeFilter()` / `mergeAll()` / `inClause()` / `quote()` — composing expressions, always
   by AND so a merge can only narrow
 - `referencedFields()` — which fields an expression needs, used to decide whether a record

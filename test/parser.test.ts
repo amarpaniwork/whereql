@@ -71,6 +71,43 @@ describe('refusals', () => {
     expect(err(`${'('.repeat(40)}a eq 'x'${')'.repeat(40)}`).code).toBe('FILTER_TOO_DEEP');
   });
 
+  // The defaults suit an expression carried in a query string. A consumer sending it in a
+  // request body has no reason to accept that ceiling, so each limit is overridable.
+  describe('configurable limits', () => {
+    const long = `a eq '${'x'.repeat(3000)}'`;
+    const deep = `${'('.repeat(40)}a eq 'x'${')'.repeat(40)}`;
+    const complex = Array.from({ length: 140 }, () => 'a eq 1').join(' and ');
+
+    it('raises the byte limit', () => {
+      expect(err(long).code).toBe('FILTER_TOO_LONG');
+      expect(() => parse(long, { maxBytes: 8192 })).not.toThrow();
+    });
+
+    it('raises the depth limit', () => {
+      expect(err(deep).code).toBe('FILTER_TOO_DEEP');
+      expect(() => parse(deep, { maxDepth: 64 })).not.toThrow();
+    });
+
+    it('raises the node limit', () => {
+      expect(err(complex).code).toBe('FILTER_TOO_COMPLEX');
+      expect(() => parse(complex, { maxNodes: 512 })).not.toThrow();
+    });
+
+    it('lowers a limit just as readily', () => {
+      expect(() => parse("a eq 'x'")).not.toThrow();
+      expect(() => parse("a eq 'x'", { maxBytes: 4 })).toThrow(FilterSyntaxError);
+    });
+
+    it('reports the limit that was actually applied, not the default', () => {
+      try {
+        parse(long, { maxBytes: 100 });
+        throw new Error('expected a refusal');
+      } catch (e) {
+        expect((e as FilterSyntaxError).details.max).toBe(100);
+      }
+    });
+  });
+
   // Deliberately short clauses: a longer expression would trip FILTER_TOO_LONG first and this
   // would stop testing the node-count guard at all.
   it('refuses an over-complex expression on node count, within the byte limit', () => {

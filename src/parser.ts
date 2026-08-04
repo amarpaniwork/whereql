@@ -143,27 +143,27 @@ function parseLeaf(stream: TokenStream): LeafNode | InNode {
   });
 }
 
-function parseAtom(stream: TokenStream, depth: number): FilterNode {
-  if (depth > FILTER_MAX_DEPTH) {
+function parseAtom(stream: TokenStream, depth: number, maxDepth: number): FilterNode {
+  if (depth > maxDepth) {
     const t = stream.peek();
-    throw new FilterSyntaxError('FILTER_TOO_DEEP', { position: t.position, max: FILTER_MAX_DEPTH });
+    throw new FilterSyntaxError('FILTER_TOO_DEEP', { position: t.position, max: maxDepth });
   }
   const t = stream.peek();
   if (t.kind === 'LPAREN') {
     stream.next();
-    const inner = parseOr(stream, depth + 1);
+    const inner = parseOr(stream, depth + 1, maxDepth);
     stream.expect('RPAREN', "expected ')'");
     return inner;
   }
   return parseLeaf(stream);
 }
 
-function parseAnd(stream: TokenStream, depth: number): FilterNode {
-  const left = parseAtom(stream, depth);
+function parseAnd(stream: TokenStream, depth: number, maxDepth: number): FilterNode {
+  const left = parseAtom(stream, depth, maxDepth);
   const children: FilterNode[] = [left];
   while (stream.peek().kind === 'AND') {
     stream.next();
-    children.push(parseAtom(stream, depth));
+    children.push(parseAtom(stream, depth, maxDepth));
   }
   if (children.length === 1) {
     return left;
@@ -172,12 +172,12 @@ function parseAnd(stream: TokenStream, depth: number): FilterNode {
   return node;
 }
 
-function parseOr(stream: TokenStream, depth: number): FilterNode {
-  const left = parseAnd(stream, depth);
+function parseOr(stream: TokenStream, depth: number, maxDepth: number): FilterNode {
+  const left = parseAnd(stream, depth, maxDepth);
   const children: FilterNode[] = [left];
   while (stream.peek().kind === 'OR') {
     stream.next();
-    children.push(parseAnd(stream, depth));
+    children.push(parseAnd(stream, depth, maxDepth));
   }
   if (children.length === 1) {
     return left;
@@ -188,8 +188,8 @@ function parseOr(stream: TokenStream, depth: number): FilterNode {
 
 /**
  * UTF-8 byte length, computed directly so the package needs neither Node's `Buffer` nor the DOM
- * lib's `TextEncoder`. The limit is in bytes rather than characters because it exists to bound
- * the URL, and a multi-byte character costs more than one.
+ * lib's `TextEncoder`. The limit is in bytes rather than characters because its usual purpose is
+ * to bound a URL, and a multi-byte character costs more than one.
  */
 function utf8ByteLength(input: string): number {
   let bytes = 0;
@@ -206,9 +206,30 @@ function utf8ByteLength(input: string): number {
   return bytes;
 }
 
-export function parse(input: string): FilterNode {
-  if (utf8ByteLength(input) > FILTER_MAX_BYTES) {
-    throw new FilterSyntaxError('FILTER_TOO_LONG', { position: 1, max: FILTER_MAX_BYTES });
+/**
+ * Resource limits. Defaults suit an expression carried in a query string; raise them when it
+ * travels somewhere roomier, such as a request body.
+ *
+ * Exceeding any of them **throws**. Nothing is silently truncated, because shortening a
+ * `not_in` list would widen what the expression permits rather than narrow it — the one
+ * direction a length guard must never move.
+ */
+export interface ParseOptions {
+  /** UTF-8 bytes. Default {@link FILTER_MAX_BYTES}. */
+  maxBytes?: number;
+  /** Parenthesis nesting. Default {@link FILTER_MAX_DEPTH}. */
+  maxDepth?: number;
+  /** AST nodes. Default {@link FILTER_MAX_NODES}. */
+  maxNodes?: number;
+}
+
+export function parse(input: string, options: ParseOptions = {}): FilterNode {
+  const maxBytes = options.maxBytes ?? FILTER_MAX_BYTES;
+  const maxDepth = options.maxDepth ?? FILTER_MAX_DEPTH;
+  const maxNodes = options.maxNodes ?? FILTER_MAX_NODES;
+
+  if (utf8ByteLength(input) > maxBytes) {
+    throw new FilterSyntaxError('FILTER_TOO_LONG', { position: 1, max: maxBytes });
   }
 
   const tokens = tokenize(input);
@@ -216,7 +237,7 @@ export function parse(input: string): FilterNode {
   if (stream.peek().kind === 'EOF') {
     throw new FilterSyntaxError('INVALID_FILTER_SYNTAX', { position: 1, detail: 'filter expression is empty' });
   }
-  const ast = parseOr(stream, 1);
+  const ast = parseOr(stream, 1, maxDepth);
   const trailing = stream.peek();
   if (trailing.kind !== 'EOF') {
     throw new FilterSyntaxError('INVALID_FILTER_SYNTAX', {
@@ -225,8 +246,8 @@ export function parse(input: string): FilterNode {
     });
   }
   const nodes = countNodes(ast);
-  if (nodes > FILTER_MAX_NODES) {
-    throw new FilterSyntaxError('FILTER_TOO_COMPLEX', { position: 1, max: FILTER_MAX_NODES });
+  if (nodes > maxNodes) {
+    throw new FilterSyntaxError('FILTER_TOO_COMPLEX', { position: 1, max: maxNodes });
   }
   return ast;
 }

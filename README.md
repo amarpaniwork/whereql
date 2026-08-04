@@ -1,14 +1,14 @@
-# itti-filter-dsl
+# whereql
 
 A small filter-expression language, with two backends that agree with each other: parse once,
 then either **translate to SQL** or **evaluate in memory against a plain object**.
 
 ```
-referenceCode in ('CD-2601-00001','CD-2601-00002') and countryAlpha3 eq 'GBR'
+status in ('ACTIVE','PENDING') and country eq 'GBR' and createdAt gte '2026-01-01'
 ```
 
 ```js
-const { parse, matches, mergeFilter } = require('itti-filter-dsl');
+const { parse, matches, mergeFilter } = require('whereql');
 
 const ast = parse("status eq 'ACTIVE' and amount gte 1000");
 matches(ast, { status: 'ACTIVE', amount: 2500 }); // true
@@ -29,7 +29,7 @@ This package is the single definition: one grammar, one AST, two backends.
 
 | Export | Purpose |
 |---|---|
-| `parse(input)` | expression → AST. Throws `FilterSyntaxError` |
+| `parse(input, opts?)` | expression → AST. Throws `FilterSyntaxError` |
 | `matches(ast, record, opts?)` | does this record satisfy the expression? |
 | `evaluate(ast, record, opts?)` | three-valued result — `true \| false \| 'unknown'` |
 | `mergeFilter(existing, extra)` | AND-merge, parenthesised |
@@ -45,9 +45,16 @@ This package is the single definition: one grammar, one AST, two backends.
 **Literals** — strings single-quoted with `''` as an escaped quote; bare numbers; ISO-8601
 dates in quotes.
 
-**Limits** — 2048 bytes, nesting depth 16, 128 AST nodes. Exceeding one **throws**; nothing is
-silently truncated, because a shortened `not_in` list would *widen* what an expression permits
-rather than narrow it.
+**Limits** — 2048 bytes, nesting depth 16, 128 AST nodes by default. The defaults suit an
+expression carried in a query string; raise them when it travels somewhere roomier:
+
+```js
+parse(input, { maxBytes: 8192, maxDepth: 64, maxNodes: 512 });
+```
+
+Exceeding a limit **throws**. Nothing is silently truncated, because shortening a `not_in`
+list would *widen* what the expression permits rather than narrow it — the one direction a
+length guard must never move.
 
 ## Two things that are easy to get wrong
 
@@ -79,7 +86,7 @@ String comparison is case-sensitive by default. For columns stored upper-cased, 
 names so in-memory comparison matches what the database does:
 
 ```js
-matches(ast, record, { caseInsensitiveFields: ['referenceCode'] });
+matches(ast, record, { caseInsensitiveFields: ['sku', 'countryCode'] });
 ```
 
 `contains` is always case-insensitive, mirroring `ILIKE`.
