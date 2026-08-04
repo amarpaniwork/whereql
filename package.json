@@ -41,5 +41,13 @@
     "jest": "latest",
     "ts-jest": "latest",
     "typescript": "latest"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amarpaniwork/whereql.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amarpaniwork/whereql/issues"
+  },
+  "homepage": "https://github.com/amarpaniwork/whereql#readme"
 }
