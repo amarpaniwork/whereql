@@ -1,8 +1,10 @@
 {
   "name": "itti-filter-dsl",
   "version": "0.1.0",
-  "description": "The filter expression grammar shared by bank-core and the customer-core proxy: tokenizer, parser, AST, and an in-memory evaluator that matches SQL semantics.",
-  "//type": "CommonJS deliberately: every consumer today (the proxy and all seven bank-core services) is CJS, and an ESM-only package would fail there with ERR_REQUIRE_ESM. Revisit as a dual build only when an ESM consumer actually exists.",
+  "description": "A small filter-expression language with two agreeing backends: parse once, then translate to SQL or evaluate in memory with SQL's three-valued semantics.",
+  "keywords": ["filter", "dsl", "parser", "query", "sql", "predicate", "odata"],
+  "license": "ISC",
+  "//type": "CommonJS deliberately: every consumer today is CJS, and an ESM-only package would fail there with ERR_REQUIRE_ESM. Revisit as a dual build only when an ESM consumer actually exists.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -11,12 +13,16 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "CHANGELOG.md"],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "prepublishOnly": "npm run build && npm test"
   },
   "devDependencies": {
     "@types/jest": "latest",
