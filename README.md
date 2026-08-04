@@ -103,3 +103,4 @@ expression by expression. It is not part of `npm test` because it reaches outsid
 
 > Still outstanding: a differential test of `matches()` against a live database running the
 > translated SQL. Reasoning about NULL semantics by reading the code is how that bug ships.
+# whereql
